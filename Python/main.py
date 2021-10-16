@@ -1,5 +1,18 @@
 import numpy as np
-import os, glob
+import os
+import glob
+from PIL import Image
+import imageio
+#%% load safe and unsafe images and convert to 64x64
 
-print("This is a test to see if I can add a file to the repo")
+#Load safe data
+for image_path_safe in glob.glob("UAV_SafeLanding/Dataset/Safe/*.png"):
+     image_safe = imageio.imread(image_path_safe)               #loads all safe images
+     image_safe = imgage_safe.resize((64,64))              #resizes all images to 64x64
+
+#Load unsafe data
+for image_path_unsafe in glob.glob("UAV_SafeLanding/Dataset/Unsafe/*.png"):
+     image_unsafe = imageio.imread(image_path_unsafe)              #loads all unsafe images
+     image_unsafe = imgage_unsafe.resize((64,64))                  #resizes all images to 64x64
+
 
