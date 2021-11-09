@@ -11,31 +11,68 @@ from PIL import Image
 #Constants
 safe_img_path = "../Dataset/Safe/"
 unsafe_img_path = "../Dataset/Unsafe/"
+resized_safe_img_path = "../Dataset/Resized_Safe/"
+resized_unsafe_img_path = "../Dataset/Resized_Unsafe/"
+edgemap_safe_img_path = "../Dataset/Edgemap_Safe/"
+edgemap_unsafe_img_path = "../Dataset/Edgemap_Unsafe/"
 
 #%% Load images and convert them to 64x64 and grayscale
 def resize_images(option):
 
     if option == 1 or option == 3:
         #Load safe data
-        for image_path_safe in glob.glob(unsafe_img_path + "*.png"): # Note must use local path for image loading
-             image_safe = Image.open(image_path_safe)                   #loads all safe images
-             image_safe = image_safe.resize((64,64))                    #resizes all images to 64x64
-             image_safe = image_safe.convert('L')                       #converts all the resized images to grayscale
-             #image_safe.save(image_path_safe, .png)                    #saves the images as a .png
-    elif option == 2 or option == 3:
+        index = 1
+        for image_path_safe in glob.glob(safe_img_path + "*.png"): # Note must use local path for image loading
+            image_safe = Image.open(image_path_safe)                   #loads all safe images
+            image_safe = image_safe.resize((64,64))                    #resizes all images to 64x64
+            image_safe = image_safe.convert('L')                       #converts all the resized images to grayscale
+            resized_img_name = resized_safe_img_path + "img_" + str(index)
+            image_safe.save(resized_img_name+ ".png", "PNG")                    #saves the images as a .png
+            index = index + 1
+
+    if option == 2 or option == 3:
         #Load unsafe data
-        for image_path_unsafe in glob.glob(safe_img_path + "*.png"): #Note: Must use local path for image loading!
-             image_unsafe = Image.open(image_path_unsafe)               #loads all unsafe images
-             image_unsafe = image_unsafe.resize((64,64))                #resizes all images to 64x64
-             image_unsafe = image_unsafe.convert('L')                   #converts all the resized images to grayscale
-             #image_unsafe.save(''.png)                                 #saves the images as a .png
+        index = 1
+        for image_path_unsafe in glob.glob(unsafe_img_path + "*.png"): #Note: Must use local path for image loading!
+            image_unsafe = Image.open(image_path_unsafe)               #loads all unsafe images
+            image_unsafe = image_unsafe.resize((64,64))                #resizes all images to 64x64
+            image_unsafe = image_unsafe.convert('L')                   #converts all the resized images to grayscale
+            resized_img_name = resized_unsafe_img_path + "img_" + str(index)
+            image_unsafe.save(resized_img_name + ".png", "PNG")                                 #saves the images as a .png
+            index = index + 1
+
+#Load resized images and generate edge maps for each using OpenCV's Canny detector
+def generate_edge_maps():
+
+    #Load safe data
+    index = 1
+    for image_path_safe in glob.glob(resized_safe_img_path + "*.png"): # Note must use local path for image loading
+        img = cv.imread(image_path_safe)
+        img_gray = cv.cvtColor(img,cv.COLOR_BGR2GRAY)
+        img_blur = cv.GaussianBlur(img_gray, (3,3), 0)
+        edges = cv.Canny(image=img_blur, threshold1=100, threshold2=200) # Canny Edge Detection
+        edgemap_img_name = edgemap_safe_img_path + "img_" + str(index) + ".png"
+        cv.imwrite(edgemap_img_name, edges)
+        index = index + 1
+
+    #Load unsafe data
+    index = 1
+    for image_path_unsafe in glob.glob(resized_unsafe_img_path + "*.png"): #Note: Must use local path for image loading!
+        img = cv.imread(image_path_unsafe)
+        img_gray = cv.cvtColor(img,cv.COLOR_BGR2GRAY)
+        img_blur = cv.GaussianBlur(img_gray, (3,3), 0)
+        edges = cv.Canny(image=img_blur, threshold1=100, threshold2=200) # Canny Edge Detection
+        edgemap_img_name = edgemap_unsafe_img_path + "img_" + str(index) + ".png"
+        cv.imwrite(edgemap_img_name, edges)                              #saves the images as a .png
+        index = index + 1
 
 #Parse arguments
 #
 # Usage: python .\main.py --resize all
 #
 parser = argparse.ArgumentParser(description='UAV Safe Landing Project Script')
-parser.add_argument("--resize", type=str, default='all', help='Resize dataset to 64x64. Default value = \'all\'. Options = \'safe\', \'unsafe\', \'all\'' )
+parser.add_argument("--resize", type=str, default='none', help='Resize dataset to 64x64. Default value = \'none\'. Options = \'safe\', \'unsafe\', \'all\'' )
+parser.add_argument("--edges", type=str, default='none', help='Resize dataset to 64x64. Default value = \'none\'. Options = \'all\'' )
 args = parser.parse_args()
 
 #Resize images if argument passed
@@ -46,27 +83,15 @@ elif resize == "safe":
     resize_images(1)
 elif resize == "unsafe":
     resize_images(2)
-else:
+elif resize != "none":
     print("Invalid resize argument!")
 
-#Edge Detection Using OpenCV
-img = cv.imread(unsafe_img_path + "img_17.png")
-cv.imshow('Original', img)
-cv.waitKey(0)
-
-img_gray = cv.cvtColor(img,cv.COLOR_BGR2GRAY)
-# Blur the image for better edge detection
-img_blur = cv.GaussianBlur(img_gray, (3,3), 0)
-
-# Canny Edge Detection
-edges = cv.Canny(image=img_blur, threshold1=100, threshold2=200) # Canny Edge Detection
-
-# Display Canny Edge Detection Image
-cv.imshow('Canny Edge Detection', edges)
-cv.waitKey(0)
-cv.destroyAllWindows()
-
-
+#Generate Edgemaps
+edges = args.edges
+if edges == "all":
+    generate_edge_maps()
+elif edges != "none":
+    print("Invalid edges argument!")
 
 #%% Model
 def model (x_p,w):
@@ -102,7 +127,7 @@ def cross_entropy(w,x,y):
 
 #%% Gradient Descent
 def gradient_descent(g, step, max_its, w):
-    
+
     gradient = grad(g) # compute gradient of cost function
 
 # gradient descent loop
@@ -112,41 +137,42 @@ def gradient_descent(g, step, max_its, w):
         # eval gradient
         grad_eval = gradient(w)
         grad_eval_norm = grad_eval /np.linalg.norm(grad_eval)
-    
+
     # take gradient descent step
         if step == 'd': # diminishing step
             alpha = 1/(k+1)
         else: # constant step
             alpha = step
         w = w - alpha*grad_eval_norm
-    
+
         # record weight and cost
         weight_history.append(w)
         cost_history.append(g(w))
     return weight_history, cost_history
 
-#%% Confusion Matrix
-prediction = sigmoid(model(x,weights))
-actual = y
-a = 0
-b = 0
-c = 0
-d = 0
-for i in range(20):
-    if actual[i] == 1 :
-        if (actual[i] - prediction[i]) < 0.5: # this increments if  correctly predicting a 1 (actual = 1, predict = 1)
-            a = a + 1
-        if (actual[i] - prediction[i]) > 0.5: # this increments if incorrectly predicting a 1 as a 0 (actual = 1, predict = 0)
-            b = b + 1
-    if actual[i] == 0:
-        if (actual[i] - prediction[i]) > -0.5: # this increments if correctly predicting a 0 (actual = 0, predict = 0)
-            d = d + 1
-        if (actual[i] - prediction[i]) < -0.5: # this increments if incorrectly predicting a 0 (actual = 0, predict = 1)
-            c = c + 1
-e = np.zeros((2,2))
-e[0][0] = a
-e[0][1] = b
-e[1][0] = c
-e[1][1] = d
-confusion_matrix = e
-print(confusion_matrix)
+def learn_model():
+    #%% Confusion Matrix
+    prediction = sigmoid(model(x,weights))
+    actual = y
+    a = 0
+    b = 0
+    c = 0
+    d = 0
+    for i in range(20):
+        if actual[i] == 1 :
+            if (actual[i] - prediction[i]) < 0.5: # this increments if  correctly predicting a 1 (actual = 1, predict = 1)
+                a = a + 1
+            if (actual[i] - prediction[i]) > 0.5: # this increments if incorrectly predicting a 1 as a 0 (actual = 1, predict = 0)
+                b = b + 1
+        if actual[i] == 0:
+            if (actual[i] - prediction[i]) > -0.5: # this increments if correctly predicting a 0 (actual = 0, predict = 0)
+                d = d + 1
+            if (actual[i] - prediction[i]) < -0.5: # this increments if incorrectly predicting a 0 (actual = 0, predict = 1)
+                c = c + 1
+    e = np.zeros((2,2))
+    e[0][0] = a
+    e[0][1] = b
+    e[1][0] = c
+    e[1][1] = d
+    confusion_matrix = e
+    print(confusion_matrix)
