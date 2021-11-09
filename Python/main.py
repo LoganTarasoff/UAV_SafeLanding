@@ -1,4 +1,7 @@
 #Import Libraries
+#
+# Install OpenCV: pip install opencv-python
+#
 import cv2 as cv
 import argparse
 import glob
@@ -57,12 +60,10 @@ img_blur = cv.GaussianBlur(img_gray, (3,3), 0)
 
 # Canny Edge Detection
 edges = cv.Canny(image=img_blur, threshold1=100, threshold2=200) # Canny Edge Detection
+
 # Display Canny Edge Detection Image
-
 cv.imshow('Canny Edge Detection', edges)
-
 cv.waitKey(0)
-
 cv.destroyAllWindows()
 
 
