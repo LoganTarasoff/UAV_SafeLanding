@@ -67,4 +67,86 @@ cv.waitKey(0)
 cv.destroyAllWindows()
 
 
+
+#%% Model
+def model (x_p,w):
+    x1 = x_p[:,0]
+    x2 = x_p[:,1]
+    x3 = x_p[:,2]
+    x4 = x_p[:,3]
+    x5 = x_p[:,4]
+    x1 = x1.reshape(-1,1)
+    x2 = x2.reshape(-1,1)
+    x3 = x3.reshape(-1,1)
+    x4 = x4.reshape(-1,1)
+    x5 = x5.reshape(-1,1)
+    a = w[0] + np.dot(x1,w[1])+ np.dot(x2,w[2])+ np.dot(x3,w[3])+ np.dot(x4,w[4])+ np.dot(x5,w[5])
+    return a
+
+#%% Sigmoid Function
+def sigmoid(t):
+    return 1/(1+np.exp(-t))
+
 #%% Cross Entropy Cost Function
+def cross_entropy(w,x,y):
+    a = sigmoid(model(x,w))
+    #print('sigmoid result is ', a)
+    #print(np.shape(a))
+    ind = np.argwhere(y==0)[:,0]
+    cost = -np.sum(np.log(1-a[ind]))
+    #print(cost)
+    ind = np.argwhere(y==1)[:,0]
+    cost -= np.sum(np.log(a[ind]))
+   # print(cost)
+    return cost/y.size
+
+#%% Gradient Descent
+def gradient_descent(g, step, max_its, w):
+    
+    gradient = grad(g) # compute gradient of cost function
+
+# gradient descent loop
+    weight_history = [w] # weight history container
+    cost_history = [g(w)] # cost history container
+    for k in range(max_its):
+        # eval gradient
+        grad_eval = gradient(w)
+        grad_eval_norm = grad_eval /np.linalg.norm(grad_eval)
+    
+    # take gradient descent step
+        if step == 'd': # diminishing step
+            alpha = 1/(k+1)
+        else: # constant step
+            alpha = step
+        w = w - alpha*grad_eval_norm
+    
+        # record weight and cost
+        weight_history.append(w)
+        cost_history.append(g(w))
+    return weight_history, cost_history
+
+#%% Confusion Matrix
+prediction = sigmoid(model(x,weights))
+actual = y
+a = 0
+b = 0
+c = 0
+d = 0
+for i in range(20):
+    if actual[i] == 1 :
+        if (actual[i] - prediction[i]) < 0.5: # this increments if  correctly predicting a 1 (actual = 1, predict = 1)
+            a = a + 1
+        if (actual[i] - prediction[i]) > 0.5: # this increments if incorrectly predicting a 1 as a 0 (actual = 1, predict = 0)
+            b = b + 1
+    if actual[i] == 0:
+        if (actual[i] - prediction[i]) > -0.5: # this increments if correctly predicting a 0 (actual = 0, predict = 0)
+            d = d + 1
+        if (actual[i] - prediction[i]) < -0.5: # this increments if incorrectly predicting a 0 (actual = 0, predict = 1)
+            c = c + 1
+e = np.zeros((2,2))
+e[0][0] = a
+e[0][1] = b
+e[1][0] = c
+e[1][1] = d
+confusion_matrix = e
+print(confusion_matrix)
