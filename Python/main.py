@@ -66,33 +66,6 @@ def generate_edge_maps():
         cv.imwrite(edgemap_img_name, edges)                              #saves the images as a .png
         index = index + 1
 
-#Parse arguments
-#
-# Usage: python .\main.py --resize all
-#
-parser = argparse.ArgumentParser(description='UAV Safe Landing Project Script')
-parser.add_argument("--resize", type=str, default='none', help='Resize dataset to 64x64. Default value = \'none\'. Options = \'safe\', \'unsafe\', \'all\'' )
-parser.add_argument("--edges", type=str, default='none', help='Resize dataset to 64x64. Default value = \'none\'. Options = \'all\'' )
-args = parser.parse_args()
-
-#Resize images if argument passed
-resize = args.resize
-if resize == "all":
-    resize_images(3)
-elif resize == "safe":
-    resize_images(1)
-elif resize == "unsafe":
-    resize_images(2)
-elif resize != "none":
-    print("Invalid resize argument!")
-
-#Generate Edgemaps
-edges = args.edges
-if edges == "all":
-    generate_edge_maps()
-elif edges != "none":
-    print("Invalid edges argument!")
-
 #%% Model
 def model (x_p,w):
     x1 = x_p[:,0]
@@ -150,7 +123,7 @@ def gradient_descent(g, step, max_its, w):
         cost_history.append(g(w))
     return weight_history, cost_history
 
-def learn_model():
+def train_model():
     #%% Confusion Matrix
     prediction = sigmoid(model(x,weights))
     actual = y
@@ -176,3 +149,36 @@ def learn_model():
     e[1][1] = d
     confusion_matrix = e
     print(confusion_matrix)
+
+#Parse arguments
+#
+# Usage: python .\main.py [-h] [--resize RESIZE] [--edges EDGES]
+#
+parser = argparse.ArgumentParser(description='UAV Safe Landing Project Script')
+parser.add_argument("-r","--resize", type=str, default='none', help='Resize dataset to 64x64. Default value = \'none\'. Options = \'safe\', \'unsafe\', \'all\'' )
+parser.add_argument("-e","--edges", type=str, default='none', help='Generate edgemaps for resized images. Default value = \'none\'. Options = \'all\'' )
+parser.add_argument("-t","--train", action='store_true', help="Train model using generated edgemaps")
+args = parser.parse_args()
+
+#Resize images if argument passed
+resize = args.resize
+if resize == "all":
+    resize_images(3)
+elif resize == "safe":
+    resize_images(1)
+elif resize == "unsafe":
+    resize_images(2)
+elif resize != "none":
+    print("Invalid resize argument!")
+
+#Generate Edgemaps
+edges = args.edges
+if edges == "all":
+    generate_edge_maps()
+elif edges != "none":
+    print("Invalid edges argument!")
+
+#Train Model
+train = args.train
+if train == True:
+    train_model()
