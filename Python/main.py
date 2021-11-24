@@ -69,16 +69,8 @@ def generate_edge_maps():
 #%% Model
 def model (x_p,w):
     x1 = x_p[:,0]
-    x2 = x_p[:,1]
-    x3 = x_p[:,2]
-    x4 = x_p[:,3]
-    x5 = x_p[:,4]
     x1 = x1.reshape(-1,1)
-    x2 = x2.reshape(-1,1)
-    x3 = x3.reshape(-1,1)
-    x4 = x4.reshape(-1,1)
-    x5 = x5.reshape(-1,1)
-    a = w[0] + np.dot(x1,w[1])+ np.dot(x2,w[2])+ np.dot(x3,w[3])+ np.dot(x4,w[4])+ np.dot(x5,w[5])
+    a = w[0] + np.dot(x1,w[1])
     return a
 
 #%% Sigmoid Function
@@ -87,15 +79,11 @@ def sigmoid(t):
 
 #%% Cross Entropy Cost Function
 def cross_entropy(w,x,y):
-    a = sigmoid(model(x,w))
-    #print('sigmoid result is ', a)
-    #print(np.shape(a))
+    a = sigmoid(model(x,w))  
     ind = np.argwhere(y==0)[:,0]
     cost = -np.sum(np.log(1-a[ind]))
-    #print(cost)
     ind = np.argwhere(y==1)[:,0]
     cost -= np.sum(np.log(a[ind]))
-   # print(cost)
     return cost/y.size
 
 #%% Gradient Descent
