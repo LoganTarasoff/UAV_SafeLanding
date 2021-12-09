@@ -66,6 +66,26 @@ def generate_edge_maps():
         cv.imwrite(edgemap_img_name, edges)                              #saves the images as a .png
         index = index + 1
 
+def get_data():
+    x = np.empty((0,2), int)
+    y = np.empty((0,1), int)
+
+    for image_path_safe in glob.glob(edgemap_safe_img_path + "*.png"):
+        img = cv.imread(image_path_safe)
+        count = np.count_nonzero(img >= 56)
+        edge_score = count/4096
+        x = np.append(x, np.array([[edge_score, 0]]), axis=0)
+        y = np.append(y, np.array([[0]]), axis=0)
+
+    for image_path_unsafe in glob.glob(edgemap_unsafe_img_path + "*.png"):
+        img = cv.imread(image_path_unsafe)
+        count = np.count_nonzero(img >= 56)
+        edge_score = count/4096
+        x = np.append(x, np.array([[edge_score, 1]]), axis=0)
+        y = np.append(y, np.array([[1]]), axis=0)
+
+    return [x,y]
+
 #%% Model
 def model (x_p,w):
     x1 = x_p[:,0]
@@ -79,7 +99,7 @@ def sigmoid(t):
 
 #%% Cross Entropy Cost Function
 def cross_entropy(w,x,y):
-    a = sigmoid(model(x,w))  
+    a = sigmoid(model(x,w))
     ind = np.argwhere(y==0)[:,0]
     cost = -np.sum(np.log(1-a[ind]))
     ind = np.argwhere(y==1)[:,0]
@@ -169,4 +189,7 @@ elif edges != "none":
 #Train Model
 train = args.train
 if train == True:
-    train_model()
+    #train_model()
+    [x,y] = get_data()
+    print(x)
+    print(y)
