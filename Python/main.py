@@ -5,12 +5,14 @@
 import cv2 as cv
 import argparse
 import glob
-import numpy as np
+from autograd import grad
+import autograd.numpy as np
 from PIL import Image
+import matplotlib.pyplot as plt
 
 #Constants
-safe_img_path = "../Dataset/Safe/"
-unsafe_img_path = "../Dataset/Unsafe/"
+safe_img_path = "../Dataset/Cropped_Safe/"
+unsafe_img_path = "../Dataset/Cropped_Unsafe/"
 resized_safe_img_path = "../Dataset/Resized_Safe/"
 resized_unsafe_img_path = "../Dataset/Resized_Unsafe/"
 edgemap_safe_img_path = "../Dataset/Edgemap_Safe/"
@@ -84,7 +86,16 @@ def get_data():
         x = np.append(x, np.array([[edge_score, 1]]), axis=0)
         y = np.append(y, np.array([[1]]), axis=0)
 
+    #Normalize values
+    x[:,0] = x[:,0]/max(x[:,0])
+
     return [x,y]
+
+x,y = get_data();
+
+x = x[:,0]
+x = x.reshape(-1,1)
+print(x)
 
 #%% Model
 def model (x_p,w):
@@ -131,10 +142,30 @@ def gradient_descent(g, step, max_its, w):
         cost_history.append(g(w))
     return weight_history, cost_history
 
+def c(t):
+    c = cross_entropy(t,x,y)
+    return c
+
 def train_model():
+    #Get data
+
+    max_iter = 1000
+    w = np.array([[1.],[1.]])
+    [weightings,cost] = gradient_descent(c,1,max_iter,w)
+
+    weights = weightings[max_iter]
+    plt.plot(sigmoid(weights[0] + weights[1]*x))
+    plt.show()
+
+    return x,y,weights
+
+def test_model(x,y,weights):
     #%% Confusion Matrix
     prediction = sigmoid(model(x,weights))
     actual = y
+
+    print(x)
+
     a = 0
     b = 0
     c = 0
@@ -189,7 +220,8 @@ elif edges != "none":
 #Train Model
 train = args.train
 if train == True:
-    #train_model()
-    [x,y] = get_data()
-    print(x)
-    print(y)
+    #[x,y] = get_data()
+    x,y,w = train_model()
+    test_model(x,y,w)
+    #print(x)
+    #print(y)
