@@ -1,7 +1,4 @@
-#Import Libraries
-#
-# Install OpenCV: pip install opencv-python
-#
+
 import cv2 as cv
 import argparse
 import glob
@@ -11,12 +8,20 @@ from PIL import Image
 import matplotlib.pyplot as plt
 
 #Constants
-safe_img_path = "../Dataset/Cropped_Safe/"
-unsafe_img_path = "../Dataset/Cropped_Unsafe/"
-resized_safe_img_path = "../Dataset/Resized_Safe/"
-resized_unsafe_img_path = "../Dataset/Resized_Unsafe/"
-edgemap_safe_img_path = "../Dataset/Edgemap_Safe/"
-edgemap_unsafe_img_path = "../Dataset/Edgemap_Unsafe/"
+safe_img_path = "Dataset/Cropped_Safe/"
+unsafe_img_path = "Dataset/Cropped_Unsafe/"
+resized_safe_img_path = "Dataset/Resized_Safe/"
+resized_unsafe_img_path = "Dataset/Resized_Unsafe/"
+edgemap_safe_img_path = "Dataset/Edgemap_Safe/"
+edgemap_unsafe_img_path = "Dataset/Edgemap_Unsafe/"
+
+test_safe_img_path = "Dataset/Test_Cropped_Safe/"
+test_unsafe_img_path = "Dataset/Test_Cropped_Unsafe/"
+test_resized_safe_img_path = "Dataset/Test_Resized_Safe/"
+test_resized_unsafe_img_path = "Dataset/Test_Resized_Unsafe/"
+test_edgemap_safe_img_path = "Dataset/Test_Edgemap_Safe/"
+test_edgemap_unsafe_img_path = "Dataset/Test_Edgemap_Unsafe/"
+
 
 #%% Load images and convert them to 64x64 and grayscale
 def resize_images(option):
@@ -35,17 +40,39 @@ def resize_images(option):
     if option == 2 or option == 3:
         #Load unsafe data
         index = 1
-        for image_path_unsafe in glob.glob(unsafe_img_path + "*.png"): #Note: Must use local path for image loading!
-            image_unsafe = Image.open(image_path_unsafe)               #loads all unsafe images
-            image_unsafe = image_unsafe.resize((64,64))                #resizes all images to 64x64
-            image_unsafe = image_unsafe.convert('L')                   #converts all the resized images to grayscale
+        for image_path_unsafe in glob.glob(unsafe_img_path + "*.png"):  #Note: Must use local path for image loading!
+            image_unsafe = Image.open(image_path_unsafe)              
+            image_unsafe = image_unsafe.resize((64,64))                
+            image_unsafe = image_unsafe.convert('L')                 
             resized_img_name = resized_unsafe_img_path + "img_" + str(index)
-            image_unsafe.save(resized_img_name + ".png", "PNG")                                 #saves the images as a .png
+            image_unsafe.save(resized_img_name + ".png", "PNG")                                
             index = index + 1
 
+    if option == 4:
+        #Load safe test data
+        index = 1
+        for test_image_path_safe in glob.glob(test_safe_img_path + "*.png"):  #Note: Must use local path for image loading!
+            test_image_safe = Image.open(test_image_path_safe)               
+            test_image_safe = test_image_safe.resize((64,64))             
+            test_image_safe = test_image_safe.convert('L')                   
+            test_resized_img_name = test_resized_safe_img_path + "img_" + str(index)
+            test_image_safe.save(test_resized_img_name + ".png", "PNG")                                
+            index = index + 1
+            
+    if option == 4:
+        #Load unsafe test data
+        index = 1
+        for test_image_path_unsafe in glob.glob(test_unsafe_img_path + "*.png"): #Note: Must use local path for image loading!
+            test_image_unsafe = Image.open(test_image_path_unsafe)             
+            test_image_unsafe = test_image_unsafe.resize((64,64))               
+            test_image_unsafe = test_image_unsafe.convert('L')                   
+            test_resized_img_name = test_resized_unsafe_img_path + "img_" + str(index)
+            test_image_unsafe.save(test_resized_img_name + ".png", "PNG")                               
+            index = index + 1
+            
 #Load resized images and generate edge maps for each using OpenCV's Canny detector
 def generate_edge_maps():
-
+    
     #Load safe data
     index = 1
     for image_path_safe in glob.glob(resized_safe_img_path + "*.png"): # Note must use local path for image loading
@@ -65,12 +92,37 @@ def generate_edge_maps():
         img_blur = cv.GaussianBlur(img_gray, (3,3), 0)
         edges = cv.Canny(image=img_blur, threshold1=100, threshold2=200) # Canny Edge Detection
         edgemap_img_name = edgemap_unsafe_img_path + "img_" + str(index) + ".png"
+        cv.imwrite(edgemap_img_name, edges)                              
+        index = index + 1
+
+    #Load safe test data
+    index = 1
+    for test_image_path_safe in glob.glob(test_resized_safe_img_path + "*.png"): # Note must use local path for image loading
+        img = cv.imread(test_image_path_safe)
+        img_gray = cv.cvtColor(img,cv.COLOR_BGR2GRAY)
+        img_blur = cv.GaussianBlur(img_gray, (3,3), 0)
+        edges = cv.Canny(image=img_blur, threshold1=100, threshold2=200) # Canny Edge Detection
+        edgemap_img_name = test_edgemap_safe_img_path + "img_" + str(index) + ".png"
+        cv.imwrite(edgemap_img_name, edges)
+        index = index + 1
+
+    #Load unsafe test data
+    index = 1
+    for test_image_path_unsafe in glob.glob(test_resized_unsafe_img_path + "*.png"): #Note: Must use local path for image loading!
+        img = cv.imread(test_image_path_unsafe)
+        img_gray = cv.cvtColor(img,cv.COLOR_BGR2GRAY)
+        img_blur = cv.GaussianBlur(img_gray, (3,3), 0)
+        edges = cv.Canny(image=img_blur, threshold1=100, threshold2=200) # Canny Edge Detection
+        edgemap_img_name = test_edgemap_unsafe_img_path + "img_" + str(index) + ".png"
         cv.imwrite(edgemap_img_name, edges)                              #saves the images as a .png
         index = index + 1
+
 
 def get_data():
     x = np.empty((0,2), int)
     y = np.empty((0,1), int)
+    x_test = np.empty((0,2), int)
+    y_test = np.empty((0,1), int)
 
     for image_path_safe in glob.glob(edgemap_safe_img_path + "*.png"):
         img = cv.imread(image_path_safe)
@@ -86,16 +138,28 @@ def get_data():
         x = np.append(x, np.array([[edge_score, 1]]), axis=0)
         y = np.append(y, np.array([[1]]), axis=0)
 
-    #Normalize values
-    x[:,0] = x[:,0]/max(x[:,0])
+    for test_image_path_safe in glob.glob(test_edgemap_safe_img_path + "*.png"):
+        img = cv.imread(test_image_path_safe)
+        count = np.count_nonzero(img >= 56)
+        edge_score = count/4096
+        x_test = np.append(x_test, np.array([[edge_score, 0]]), axis=0)
+        y_test = np.append(y_test, np.array([[0]]), axis=0)
 
-    return [x,y]
+    for test_image_path_unsafe in glob.glob(test_edgemap_unsafe_img_path + "*.png"):
+        img = cv.imread(test_image_path_unsafe)
+        count = np.count_nonzero(img >= 56)
+        edge_score = count/4096
+        x_test = np.append(x_test, np.array([[edge_score, 1]]), axis=0)
+        y_test = np.append(y_test, np.array([[1]]), axis=0)
 
-x,y = get_data();
+    return [x,y,x_test,y_test]
 
-x = x[:,0]
+x,y,x_test,y_test = get_data();  #You may need to comment lines 157-161 out until your images are populuted in their respective folders
+x = x[:,0]/max(x[:,0])
 x = x.reshape(-1,1)
-print(x)
+x_test = x_test[:,0]/max(x_test[:,0])
+x_test=x_test.reshape(-1,1)
+
 
 #%% Model
 def model (x_p,w):
@@ -150,27 +214,36 @@ def train_model():
     #Get data
 
     max_iter = 1000
-    w = np.array([[1.],[1.]])
+    w = np.array([[-100],[1.]])
     [weightings,cost] = gradient_descent(c,1,max_iter,w)
 
     weights = weightings[max_iter]
-    plt.plot(sigmoid(weights[0] + weights[1]*x))
+    print(weights)
+    # plt.plot(sigmoid(weights[0] + weights[1]*x))
+    # plt.show()
+    plt.scatter(x,y)
+    xp=np.array([np.linspace(0,1,200)])
+    xp = xp.reshape(-1,1)
+    plt.plot(xp,sigmoid(model(xp,weights)))
     plt.show()
-
     return x,y,weights
 
-def test_model(x,y,weights):
+
     #%% Confusion Matrix
-    prediction = sigmoid(model(x,weights))
-    actual = y
-
-    print(x)
-
+def test_model(x_test,y_test,weights):
+    weights = np.array([-14.587, 97.3]) #This is hard coded in right now
+    weights=weights.reshape(-1,1)
+    prediction = sigmoid(model(x_test,weights))
+    # prediction = prediction.reshape(-1,1)
+    actual = y_test
+    # actual=actual.reshape(1,-1)
+    
     a = 0
     b = 0
     c = 0
     d = 0
-    for i in range(20):
+    
+    for i in range(x_test.size):
         if actual[i] == 1 :
             if (actual[i] - prediction[i]) < 0.5: # this increments if  correctly predicting a 1 (actual = 1, predict = 1)
                 a = a + 1
@@ -189,7 +262,7 @@ def test_model(x,y,weights):
     confusion_matrix = e
     print(confusion_matrix)
 
-#Parse arguments
+#%%Parse arguments
 #
 # Usage: python .\main.py [-h] [--resize RESIZE] [--edges EDGES]
 #
@@ -207,12 +280,15 @@ elif resize == "safe":
     resize_images(1)
 elif resize == "unsafe":
     resize_images(2)
+elif resize == "test_data":
+    resize_images(4)
 elif resize != "none":
     print("Invalid resize argument!")
 
 #Generate Edgemaps
 edges = args.edges
 if edges == "all":
+    print('triggered')
     generate_edge_maps()
 elif edges != "none":
     print("Invalid edges argument!")
@@ -222,6 +298,6 @@ train = args.train
 if train == True:
     #[x,y] = get_data()
     x,y,w = train_model()
-    test_model(x,y,w)
+    # test_model(x,y,w)
     #print(x)
     #print(y)
