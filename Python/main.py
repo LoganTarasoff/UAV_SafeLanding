@@ -22,6 +22,10 @@ test_resized_unsafe_img_path = "Dataset/Test_Resized_Unsafe/"
 test_edgemap_safe_img_path = "Dataset/Test_Edgemap_Safe/"
 test_edgemap_unsafe_img_path = "Dataset/Test_Edgemap_Unsafe/"
 
+removed = "Dataset/removed/"
+resized_removed = "Dataset/resized_removed/"
+edgemap_removed = "Dataset/edgemap_removed/"
+
 
 #%% Load images and convert them to 64x64 and grayscale
 def resize_images(option):
@@ -48,7 +52,7 @@ def resize_images(option):
             image_unsafe.save(resized_img_name + ".png", "PNG")                                
             index = index + 1
 
-    if option == 4:
+    if option == 4 or option == 3:
         #Load safe test data
         index = 1
         for test_image_path_safe in glob.glob(test_safe_img_path + "*.png"):  #Note: Must use local path for image loading!
@@ -59,7 +63,7 @@ def resize_images(option):
             test_image_safe.save(test_resized_img_name + ".png", "PNG")                                
             index = index + 1
             
-    if option == 4:
+    if option == 4 or option == 3:
         #Load unsafe test data
         index = 1
         for test_image_path_unsafe in glob.glob(test_unsafe_img_path + "*.png"): #Note: Must use local path for image loading!
@@ -68,6 +72,17 @@ def resize_images(option):
             test_image_unsafe = test_image_unsafe.convert('L')                   
             test_resized_img_name = test_resized_unsafe_img_path + "img_" + str(index)
             test_image_unsafe.save(test_resized_img_name + ".png", "PNG")                               
+            index = index + 1
+            
+    if option == 1 or option == 3:
+        #Load safe data
+        index = 1
+        for removed_path in glob.glob(removed + "*.png"): # Note must use local path for image loading
+            image_removed = Image.open(removed_path)                   #loads all safe images
+            image_removed= image_removed.resize((64,64))                    #resizes all images to 64x64
+            image_removed = image_removed.convert('L')                       #converts all the resized images to grayscale
+            removed_resized_img_name = resized_removed + "img_" + str(index)
+            image_removed.save(removed_resized_img_name+ ".png", "PNG")                    #saves the images as a .png
             index = index + 1
             
 #Load resized images and generate edge maps for each using OpenCV's Canny detector
@@ -117,6 +132,15 @@ def generate_edge_maps():
         cv.imwrite(edgemap_img_name, edges)                              #saves the images as a .png
         index = index + 1
 
+    index = 1
+    for removed_path in glob.glob(resized_removed + "*.png"): #Note: Must use local path for image loading!
+        img = cv.imread(removed_path)
+        img_gray = cv.cvtColor(img,cv.COLOR_BGR2GRAY)
+        img_blur = cv.GaussianBlur(img_gray, (3,3), 0)
+        edges = cv.Canny(image=img_blur, threshold1=100, threshold2=200) # Canny Edge Detection
+        edgemap_img_name = edgemap_removed + "img_" + str(index) + ".png"
+        cv.imwrite(edgemap_img_name, edges)                              #saves the images as a .png
+        index = index + 1
 
 def get_data():
     x = np.empty((0,2), int)
@@ -154,7 +178,7 @@ def get_data():
 
     return [x,y,x_test,y_test]
 
-x,y,x_test,y_test = get_data();  #You may need to comment lines 157-161 out until your images are populuted in their respective folders
+x,y,x_test,y_test = get_data();  # comment lines 157-161 out until your images are populuted in their respective folders
 x = x[:,0]/max(x[:,0])
 x = x.reshape(-1,1)
 x_test = x_test[:,0]/max(x_test[:,0])
@@ -219,24 +243,22 @@ def train_model():
 
     weights = weightings[max_iter]
     print(weights)
-    # plt.plot(sigmoid(weights[0] + weights[1]*x))
-    # plt.show()
     plt.scatter(x,y)
     xp=np.array([np.linspace(0,1,200)])
     xp = xp.reshape(-1,1)
     plt.plot(xp,sigmoid(model(xp,weights)))
+    plt.xlabel("Normalized Edge Score")
+    plt.ylabel("Label")
+    plt.title("Training Model")
     plt.show()
     return x,y,weights
 
 
     #%% Confusion Matrix
-def test_model(x_test,y_test,weights):
-    weights = np.array([-14.587, 97.3]) #This is hard coded in right now
-    weights=weights.reshape(-1,1)
-    prediction = sigmoid(model(x_test,weights))
-    # prediction = prediction.reshape(-1,1)
+def test_model(x_test,y_test,w):
+    prediction = sigmoid(model(x_test,w))
     actual = y_test
-    # actual=actual.reshape(1,-1)
+
     
     a = 0
     b = 0
@@ -270,6 +292,7 @@ parser = argparse.ArgumentParser(description='UAV Safe Landing Project Script')
 parser.add_argument("-r","--resize", type=str, default='none', help='Resize dataset to 64x64. Default value = \'none\'. Options = \'safe\', \'unsafe\', \'all\'' )
 parser.add_argument("-e","--edges", type=str, default='none', help='Generate edgemaps for resized images. Default value = \'none\'. Options = \'all\'' )
 parser.add_argument("-t","--train", action='store_true', help="Train model using generated edgemaps")
+#parser.add_argument("-tt","--test", action ='store_true', help = "Test model using generated edgemaps")
 args = parser.parse_args()
 
 #Resize images if argument passed
@@ -292,12 +315,14 @@ if edges == "all":
     generate_edge_maps()
 elif edges != "none":
     print("Invalid edges argument!")
-
+    
 #Train Model
 train = args.train
 if train == True:
-    #[x,y] = get_data()
     x,y,w = train_model()
-    # test_model(x,y,w)
-    #print(x)
-    #print(y)
+    test_model(x_test,y_test,w)
+# #Test Model
+# test = args.test
+# if test == True:
+#     test_model(x_test,y_test,w)
+
