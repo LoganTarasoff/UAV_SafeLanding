@@ -181,6 +181,7 @@ def get_data():
 x,y,x_test,y_test = get_data();  # comment lines 157-161 out until your images are populuted in their respective folders
 x = x[:,0]/max(x[:,0])
 x = x.reshape(-1,1)
+
 x_test = x_test[:,0]/max(x_test[:,0])
 x_test=x_test.reshape(-1,1)
 
@@ -254,7 +255,7 @@ def train_model():
     return x,y,weights
 
 
-    #%% Confusion Matrix
+#%% Confusion Matrix
 def test_model(x_test,y_test,w):
     prediction = sigmoid(model(x_test,w))
     actual = y_test
